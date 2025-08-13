@@ -8,60 +8,77 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function renderScene(scene, sceneImageUrl) {
+function renderSceneBackground(sceneImageUrl) {
     sceneContainer.style.backgroundImage = `url(${sceneImageUrl})`;
     characterContainer.innerHTML = ''; // Clear previous characters
 }
 
-function renderCharacter(characterName, characterImageUrl, isTalking = false) {
-    let characterEl = document.getElementById(`char-${characterName.replace(/\s/g, '-')}`);
+function renderCharacter(characterName, characterImageUrl) {
+    const characterId = `char-${characterName.replace(/\s/g, '-')}`;
+    let characterEl = document.getElementById(characterId);
     if (!characterEl) {
         characterEl = document.createElement('img');
-        characterEl.id = `char-${characterName.replace(/\s/g, '-')}`;
+        characterEl.id = characterId;
         characterEl.src = characterImageUrl;
         characterEl.className = 'character';
+        characterEl.alt = characterName;
         characterContainer.appendChild(characterEl);
-        
-        // Basic positioning logic
-        const numChars = characterContainer.children.length;
-        const position = 15 + (numChars - 1) * 30; // Spread characters out
-        characterEl.style.left = `${position}%`;
-        characterEl.style.transform = `translateX(-${position}%)`;
     }
-    
-    if (isTalking) {
-        characterEl.classList.add('talking');
-    } else {
-        document.querySelectorAll('.character').forEach(c => c.classList.remove('talking'));
-    }
-
     return characterEl;
 }
 
-async function playDialogue(dialogueLine, audioUrl, characterEl) {
+function positionCharacters(characterNames, characterImageUrls) {
+    const totalChars = characterNames.length;
+    characterNames.forEach((name, index) => {
+        const characterEl = renderCharacter(name, characterImageUrls[name]);
+        
+        // Distribute characters evenly across the screen
+        const positionPercent = (index + 1) * (100 / (totalChars + 1));
+        
+        characterEl.style.left = `${positionPercent}%`;
+        characterEl.style.transform = `translateX(-50%)`; // Center the element
+    });
+}
+
+function setTalkingCharacter(characterName) {
+    document.querySelectorAll('.character').forEach(el => {
+        if (el.alt === characterName) {
+            el.classList.add('talking');
+        } else {
+            el.classList.remove('talking');
+        }
+    });
+}
+
+function stopAllTalking() {
+    document.querySelectorAll('.character.talking').forEach(el => {
+        el.classList.remove('talking');
+    });
+}
+
+async function playDialogue(dialogueLine, audioUrl) {
     return new Promise(async (resolve, reject) => {
         ui.showSubtitles(dialogueLine.character, dialogueLine.line);
-        characterEl.classList.add('talking');
+        setTalkingCharacter(dialogueLine.character);
         
         const audio = new Audio(audioUrl);
         
         audio.onerror = (e) => {
             logger.error('Error playing audio:', audioUrl, e);
-            characterEl.classList.remove('talking');
+            stopAllTalking();
             ui.hideSubtitles();
-            // Don't reject the promise, just resolve to continue the show
             resolve(); 
         };
         
         audio.onended = () => {
-            characterEl.classList.remove('talking');
+            stopAllTalking();
             ui.hideSubtitles();
             resolve();
         };
 
         audio.play().catch(e => {
             logger.error('Audio play() promise rejected:', e);
-            audio.onerror(e); // Trigger our error handler
+            audio.onerror(e);
         });
     });
 }
@@ -72,13 +89,10 @@ export async function play(showData) {
 
     for (const scene of script.scenes) {
         logger.info(`Playing Scene ${scene.scene}`);
-        renderScene(scene, assets.scenes[scene.scene]);
+        renderSceneBackground(assets.scenes[scene.scene]);
         
-        // Pre-render characters in the scene
         const sceneCharacterNames = [...new Set(scene.dialogue.map(d => d.character))];
-        sceneCharacterNames.forEach(name => {
-            renderCharacter(name, assets.characters[name]);
-        });
+        positionCharacters(sceneCharacterNames, assets.characters);
         
         await sleep(2000); // Time for scene transition
 
@@ -91,8 +105,14 @@ export async function play(showData) {
                 logger.warn(`Missing audio for key ${audioKey}. Skipping line.`);
                 continue;
             }
+            
+            const characterId = `char-${line.character.replace(/\s/g, '-')}`;
+            const characterEl = document.getElementById(characterId);
 
-            const characterEl = renderCharacter(line.character, assets.characters[line.character], true);
+            if (!characterEl) {
+                logger.warn(`Character element for ${line.character} not found in scene. Skipping line.`);
+                continue;
+            }
 
             // Simple animation
             if (line.action === 'enter') {
@@ -101,7 +121,7 @@ export async function play(showData) {
                 characterEl.style.opacity = '1';
             }
 
-            await playDialogue(line, audioUrl, characterEl);
+            await playDialogue(line, audioUrl);
             
              if (line.action === 'exit') {
                 characterEl.style.opacity = '0';
