@@ -1,0 +1,149 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+    color: #fff;
+    font-family: 'Roboto Slab', serif;
+}
+
+#app-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#intro-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#intro-screen h1 {
+    font-size: 8vw;
+    margin: 0;
+    font-weight: 700;
+}
+
+#intro-screen h2 {
+    font-size: 3vw;
+    margin: 0 0 40px 0;
+    font-weight: 400;
+    color: #ccc;
+}
+
+#start-button {
+    padding: 15px 30px;
+    font-size: 1.5vw;
+    cursor: pointer;
+    background-color: #1a3a7a;
+    color: white;
+    border: 2px solid #fff;
+    border-radius: 5px;
+    font-family: 'Roboto Slab', serif;
+    transition: background-color 0.3s;
+}
+
+#start-button:hover {
+    background-color: #2e5ab8;
+}
+
+#show-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#scene-container {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: background-image 1s ease-in-out;
+    position: relative;
+}
+
+#character-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 90%;
+}
+
+.character {
+    position: absolute;
+    bottom: 0;
+    height: 85%;
+    max-width: 400px;
+    transition: transform 1s ease-in-out, opacity 1s ease-in-out;
+    transform-origin: bottom center;
+}
+
+.character.talking {
+    transform: scale(1.05);
+}
+
+#subtitles-container {
+    position: absolute;
+    bottom: 5%;
+    left: 10%;
+    right: 10%;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    text-align: center;
+    font-size: 1.8vw;
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    min-height: 2.5em;
+}
+
+#subtitles-container.visible {
+    opacity: 1;
+}
+
+#loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #1a3a7a;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1.5s linear infinite;
+}
+
+#loading-message {
+    margin-top: 20px;
+    font-size: 1.5em;
+    color: #fff;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
