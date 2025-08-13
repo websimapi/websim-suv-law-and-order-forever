@@ -81,7 +81,7 @@ export async function generateSceneImages(scenes) {
     const imageUrls = {};
     const imagePromises = scenes.map(async (scene) => {
         const result = await withRetry(() => websim.imageGen({
-            prompt: `${scene.setting_description}, cinematic, dramatic lighting, photorealistic, wide angle shot`,
+            prompt: `${scene.setting_description}, no people, empty background, cinematic, dramatic lighting, photorealistic, wide angle shot`,
             aspect_ratio: "16:9"
         }), { onRetry: createRetryHandler(`Generating background for Scene ${scene.scene}...`) });
         imageUrls[scene.scene] = result.url;
