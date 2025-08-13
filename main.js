@@ -1,30 +1,33 @@
 import * as ai from './ai.js';
 import * as show from './show.js';
 import * as ui from './ui.js';
+import { logger } from './logger.js';
 
 const startButton = document.getElementById('start-button');
 const introScreen = document.getElementById('intro-screen');
 const showContainer = document.getElementById('show-container');
 
 async function generateAndPlayShow() {
+    logger.clear();
+    logger.info('Starting new episode generation.');
     introScreen.classList.add('hidden');
     ui.showLoading('Generating script...');
 
     try {
         const scriptData = await ai.generateFullShowScript();
-        console.log("Generated Script:", scriptData);
+        logger.info("Generated Script:", scriptData);
 
         ui.updateLoadingMessage('Generating character portraits...');
         const characterImageUrls = await ai.generateCharacterImages(scriptData.characters);
-        console.log("Character Images:", characterImageUrls);
+        logger.info("Character Images:", characterImageUrls);
 
         ui.updateLoadingMessage('Generating scene backgrounds...');
         const sceneImageUrls = await ai.generateSceneImages(scriptData.scenes);
-        console.log("Scene Images:", sceneImageUrls);
+        logger.info("Scene Images:", sceneImageUrls);
 
         ui.updateLoadingMessage('Generating dialogue audio...');
-        const dialogueAudioUrls = await ai.generateAllDialogueAudio(scriptData.scenes);
-        console.log("Dialogue Audio:", dialogueAudioUrls);
+        const dialogueAudioUrls = await ai.generateAllDialogueAudio(scriptData);
+        logger.info("Dialogue Audio:", dialogueAudioUrls);
         
         const showData = {
             script: scriptData,
@@ -45,13 +48,11 @@ async function generateAndPlayShow() {
         introScreen.classList.remove('hidden');
 
     } catch (error) {
-        console.error("Failed to generate and play the show:", error);
+        logger.error("A critical error occurred in generateAndPlayShow:", error);
         ui.hideLoading();
-        introScreen.classList.remove('hidden');
-        alert("Sorry, something went wrong during episode generation. Please try again.");
+        ui.showError("Sorry, something went wrong during episode generation. Please try again or copy the logs for support.", generateAndPlayShow);
     }
 }
 
 
 startButton.addEventListener('click', generateAndPlayShow);
-

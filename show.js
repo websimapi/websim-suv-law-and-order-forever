@@ -1,4 +1,5 @@
 import * as ui from './ui.js';
+import { logger } from './logger.js';
 
 const sceneContainer = document.getElementById('scene-container');
 const characterContainer = document.getElementById('character-container');
@@ -38,25 +39,39 @@ function renderCharacter(characterName, characterImageUrl, isTalking = false) {
 }
 
 async function playDialogue(dialogueLine, audioUrl, characterEl) {
-    return new Promise(async (resolve) => {
+    return new Promise(async (resolve, reject) => {
         ui.showSubtitles(dialogueLine.character, dialogueLine.line);
         characterEl.classList.add('talking');
         
         const audio = new Audio(audioUrl);
-        audio.play();
+        
+        audio.onerror = (e) => {
+            logger.error('Error playing audio:', audioUrl, e);
+            characterEl.classList.remove('talking');
+            ui.hideSubtitles();
+            // Don't reject the promise, just resolve to continue the show
+            resolve(); 
+        };
         
         audio.onended = () => {
             characterEl.classList.remove('talking');
             ui.hideSubtitles();
             resolve();
         };
+
+        audio.play().catch(e => {
+            logger.error('Audio play() promise rejected:', e);
+            audio.onerror(e); // Trigger our error handler
+        });
     });
 }
 
 export async function play(showData) {
+    logger.info('Starting show playback.');
     const { script, assets } = showData;
 
     for (const scene of script.scenes) {
+        logger.info(`Playing Scene ${scene.scene}`);
         renderScene(scene, assets.scenes[scene.scene]);
         
         // Pre-render characters in the scene
@@ -71,6 +86,12 @@ export async function play(showData) {
             const line = scene.dialogue[i];
             const audioKey = `scene-${scene.scene}-line-${i}`;
             const audioUrl = assets.dialogue[audioKey];
+
+            if (!audioUrl) {
+                logger.warn(`Missing audio for key ${audioKey}. Skipping line.`);
+                continue;
+            }
+
             const characterEl = renderCharacter(line.character, assets.characters[line.character], true);
 
             // Simple animation
@@ -94,8 +115,8 @@ export async function play(showData) {
         await sleep(2000); // Pause between scenes
     }
     
+    logger.info('Show playback finished.');
     // End of show
     characterContainer.innerHTML = '';
     sceneContainer.style.backgroundImage = 'none';
 }
-
